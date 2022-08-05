@@ -45,6 +45,7 @@ String SP421::begin(time_t time, bool &criticalFault, bool &fault)
 
 String SP421::selfDiagnostic(uint8_t diagnosticLevel, time_t time)
 {
+	if(getSensorPort() == 0) throwError(FIND_FAIL); //If no port found, report failure
 	String output = "{\"Apogee Pyro\":{";
 	if(diagnosticLevel == 0) {
 		//TBD
@@ -102,7 +103,7 @@ String SP421::selfDiagnostic(uint8_t diagnosticLevel, time_t time)
 		output = output + "}"; //Close pair
 		
 	}
-	return output + ",\"Pos\":[" + getTalonPort() + "," + getSensorPort() + "]}}"; //Write position in logical form - Return compleated closed output
+	return output + ",\"Pos\":[" + getTalonPortString() + "," + getSensorPortString() + "]}}"; //Write position in logical form - Return compleated closed output
 }
 
 String SP421::getMetadata()

@@ -12,7 +12,7 @@ class SP421: public Sensor
 	constexpr static int DEFAULT_SENSOR_PORT = 0; ///<Use port 0 by default
   	constexpr static int DEFAULT_VERSION = 0x00; ///<Use hardware version unknown by default
 	const String FIRMWARE_VERSION = "0.0.0"; //FIX! Read from system??
-  	// constexpr static int MAX_NUM_ERRORS = 10; ///<Maximum number of errors to log before overwriting previous errors in buffer
+  	constexpr static int MAX_NUM_ERRORS = 10; ///<Maximum number of errors to log before overwriting previous errors in buffer
 
 	// const uint32_t SENSOR_PORT_RANGE_ERROR = 0x90010100; //FIX! 
 	// const uint32_t TALON_PORT_RANGE_ERROR = 0x90010200; //FIX! 

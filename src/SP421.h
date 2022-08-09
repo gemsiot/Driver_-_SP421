@@ -3,10 +3,9 @@
 
 // #include "DPS368-Library-Arduino/src/Dps368.h"
 // #include "Adafruit_SHT31/src/Adafruit_SHT31.h"
-#include <Sensor.h>
-#include <SDI12Talon.h>
+#include <SDI12TalonSensor.h>
 
-class SP421: public Sensor
+class SP421: public SDI12TalonSensor
 {
 	constexpr static int DEAFULT_PORT = 2; ///<Use port 2 by default
 	constexpr static int DEFAULT_SENSOR_PORT = 0; ///<Use port 0 by default
@@ -23,13 +22,15 @@ class SP421: public Sensor
 	const uint32_t SHT3X_I2C_ERROR = 0x10020000; //FIX! Error subtype = I2C error code
 
 	public:
-		SP421(SDI12Talon& talon_, uint8_t talonPort_ = DEAFULT_PORT, uint8_t sensorPort_ = DEFAULT_SENSOR_PORT, uint8_t version = DEFAULT_VERSION);
+		SP421(SDI12Talon& talon_, uint8_t sensorPort_);
 		String begin(time_t time, bool &criticalFault, bool &fault);
 		String getData(time_t time);
 		String selfDiagnostic(uint8_t diagnosticLevel = 4, time_t time = 0); //Default to just level 4 diagnostic, default to time = 0
-		String getMetadata();
+
 		String getErrors();
-		bool isPresent();
+		const char* name() override { return "Apogee Pyro"; }
+		const char* firmwareVersion() override { return FIRMWARE_VERSION; }
+		static bool isPresent(SDI12Talon& talon, uint8_t port);
 		// uint8_t getTalonPort() {
 		// 	if(talonPort < 255) return talonPort + 1;
 		// 	else return 0;
@@ -48,9 +49,6 @@ class SP421: public Sensor
 
 		// const uint8_t sensorInterface = BusType::I2C; 
 	private:
-		// Dps368 presSensor = Dps368();
-		// Adafruit_SHT31 rhSensor = Adafruit_SHT31();
-		SDI12Talon& talon;
 		// uint8_t port = 0;
 		// int throwError(uint32_t error);
 

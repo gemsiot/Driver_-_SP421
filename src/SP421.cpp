@@ -46,6 +46,7 @@ String SP421::begin(time_t time, bool &criticalFault, bool &fault)
 String SP421::selfDiagnostic(uint8_t diagnosticLevel, time_t time)
 {
 	if(getSensorPort() == 0) throwError(FIND_FAIL); //If no port found, report failure
+	else if(isPresent() == false) throwError(DETECT_FAIL); //If sensor port is good, but fail to detect sensor, throw error 
 	String output = "\"Apogee Pyro\":{";
 	if(diagnosticLevel == 0) {
 		//TBD
@@ -64,7 +65,7 @@ String SP421::selfDiagnostic(uint8_t diagnosticLevel, time_t time)
  	}
 
 	if(diagnosticLevel <= 4) {
-		if(getSensorPort() != 0) { //Test as normal
+		if(getSensorPort() != 0 && isPresent() == true) { //Test as normal
 			uint8_t adr = (talon.sendCommand("?!")).toInt(); //Get address of local device 
 			String stat = talon.command("M2", adr);
 			Serial.print("STAT: "); //DEBUG!
@@ -82,7 +83,7 @@ String SP421::selfDiagnostic(uint8_t diagnosticLevel, time_t time)
 	}
 
 	if(diagnosticLevel <= 5) {
-		if(getSensorPort() != 0) { //Test as normal
+		if(getSensorPort() != 0 && isPresent() == true) { //Test as normal
 			String adr = talon.sendCommand("?!");
 			int adrVal = adr.toInt();
 			output = output + "\"Adr\":";
@@ -159,7 +160,7 @@ String SP421::getMetadata()
 String SP421::getData(time_t time)
 {
 	String output = "\"Apogee Pyro\":{"; //OPEN JSON BLOB
-	if(getSensorPort() != 0) { //Only try to get data if sensor has been detected 
+	if(getSensorPort() != 0 && isPresent()) { //Only try to get data if sensor has been detected 
 		uint8_t adr = (talon.sendCommand("?!")).toInt(); //Get address of local device 
 		String stat = talon.command("M0", adr);
 		Serial.print("STAT: "); //DEBUG!

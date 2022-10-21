@@ -160,46 +160,69 @@ String SP421::getMetadata()
 String SP421::getData(time_t time)
 {
 	String output = "\"Apogee Pyro\":{"; //OPEN JSON BLOB
-	if(getSensorPort() != 0 && isPresent()) { //Only try to get data if sensor has been detected 
-		uint8_t adr = (talon.sendCommand("?!")).toInt(); //Get address of local device 
-		String stat = talon.command("M0", adr);
-		Serial.print("STAT: "); //DEBUG!
-		Serial.println(stat);
+	bool readDone = false;
+	if(getSensorPort() != 0) { //Check both for detection 
+		for(int i = 0; i < talon.retryCount; i++) {
+			if(!isPresent()) continue; //If presence check fails, try again
 
-		delay(1000); //Wait 1 second to get data back //FIX! Wait for newline??
-		String data = talon.command("D0", adr);
-		Serial.print("DATA: "); //DEBUG!
-		Serial.println(data);
+			int adr = talon.getAddress();
+			if(adr < 0) {
+				Serial.print("TDR315 ADR = "); //DEBUG!
+				Serial.println(adr);
+				continue; //If address is out of range, try again
+			}
+			int waitTime = talon.startMeasurmentCRC(adr);
+			if(waitTime <= 0) {
+				Serial.print("TDR315 Wait Time = "); //DEBUG!
+				Serial.println(waitTime);
+				continue; //If wait time out of range, try again
+			}
+			// uint8_t adr = (talon.sendCommand("?!")).toInt(); //Get address of local device 
+			// String stat = talon.command("MC", adr);
 
-		
+			// Serial.print("STAT: "); //DEBUG!
+			// Serial.println(stat);
 
-		float sensorData[2] = {0.0}; //Store the 3 vals from the sensor in float form
-		// data.remove(0,1); //Remove leading +
-		if((data.substring(0, data.indexOf("+"))).toInt() != adr) { //If address returned is not the same as the address read, throw error
-			Serial.println("ADDRESS MISMATCH!"); //DEBUG!
-			//Throw error!
+			
+
+			delay(waitTime*1000 + 500); //Wait for number of seconds requested, plus half a second to make sure
+			String data = talon.command("D0", adr);
+			Serial.print("DATA: "); //DEBUG!
+			Serial.println(data);
+
+			
+
+			float sensorData[2] = {0.0}; //Store the 3 vals from the sensor in float form
+			// data.remove(0,1); //Remove leading +
+			if((data.substring(0, data.indexOf("+"))).toInt() != adr) { //If address returned is not the same as the address read, throw error
+				Serial.println("ADDRESS MISMATCH!"); //DEBUG!
+				//Throw error!
+			}
+			data.remove(0, 1); //Delete address from start of string
+			sensorData[0] = (data.trim()).toFloat();
+			talon.command("M1", adr);
+			delay(1000); //FIX! Wait for newline??
+			data = talon.command("D0", adr);
+			data.remove(0, 1); //Delete address from start of string
+			sensorData[1] = (data.trim()).toFloat();
+			// for(int i = 0; i < 3; i++) { //Parse string into floats -- do this to run tests on the numbers themselves and make sure formatting is clean
+				// if(data.indexOf("+") > 0) {
+				// 	sensorData[i] = (data.substring(0, data.indexOf("+"))).toFloat();
+				// 	Serial.println(data.substring(0, data.indexOf("+"))); //DEBUG!
+				// 	data.remove(0, data.indexOf("+") + 1); //Delete leading entry
+				// }
+				// else {
+				// 	data.trim(); //Trim off trailing characters
+				// 	sensorData[i] = data.toFloat();
+				// }
+			// }
+			output = output + "\"Solar\":" + String(sensorData[0]) + ",\"Solar_mV\":" + String(sensorData[1]); //Concatonate data
+			readDone = true; //Set flag
+			break; //Stop retry if appended 
 		}
-		data.remove(0, 1); //Delete address from start of string
-		sensorData[0] = (data.trim()).toFloat();
-		talon.command("M1", adr);
-		delay(1000); //FIX! Wait for newline??
-		data = talon.command("D0", adr);
-		data.remove(0, 1); //Delete address from start of string
-		sensorData[1] = (data.trim()).toFloat();
-		// for(int i = 0; i < 3; i++) { //Parse string into floats -- do this to run tests on the numbers themselves and make sure formatting is clean
-			// if(data.indexOf("+") > 0) {
-			// 	sensorData[i] = (data.substring(0, data.indexOf("+"))).toFloat();
-			// 	Serial.println(data.substring(0, data.indexOf("+"))); //DEBUG!
-			// 	data.remove(0, data.indexOf("+") + 1); //Delete leading entry
-			// }
-			// else {
-			// 	data.trim(); //Trim off trailing characters
-			// 	sensorData[i] = data.toFloat();
-			// }
-		// }
-		output = output + "\"Solar\":" + String(sensorData[0]) + ",\"Solar_mV\":" + String(sensorData[1]); //Concatonate data
 	}
-	else output = output + "\"Solar\":null,\"Solar_mV\":null"; //Otherwise generate null report 
+	if(getSensorPort() == 0 || readDone == false) output = output + "\"Solar\":null,\"Solar_mV\":null"; //Otherwise generate null report 
+	if(readDone == false) throwError(talon.SDI12_READ_FAIL);
 	output = output + ",\"Pos\":[" + getTalonPortString() + "," + getSensorPortString() + "]"; //Concatonate position 
 	output = output + "}"; //CLOSE JSON BLOB
 	// Serial.println(output); //DEBUG!

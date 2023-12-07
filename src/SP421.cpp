@@ -1,3 +1,5 @@
+//© 2023 Regents of the University of Minnesota. All rights reserved.
+
 #include <SP421.h>
 
 SP421::SP421(SDI12Talon& talon_, uint8_t talonPort_, uint8_t sensorPort_, uint8_t version): talon(talon_)
